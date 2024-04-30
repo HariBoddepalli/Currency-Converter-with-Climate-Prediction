@@ -1,0 +1,94 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONObject;
+
+public class WeatherApp {
+    private static final String API_KEY = "9ce61e9b37e2113adaabc1052f802213";
+    private static final String[] CITIES = {"Delhi", "Mumbai", "Bangalore", "Hyderabad", "Chennai","Rajasthan","Srikakulam","Visakhapatnam"};
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> createAndShowGUI());
+    }
+
+    private static void createAndShowGUI() {
+        JFrame frame = new JFrame("Weather App");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(500, 250);
+        frame.setLocationRelativeTo(null);
+
+        Color primaryColor = new Color(0, 102, 204);
+        Color secondaryColor = new Color(255, 255, 255);
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setBackground(secondaryColor);
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+        JComboBox<String> cityList = new JComboBox<>(CITIES);
+        cityList.setForeground(primaryColor);
+        cityList.setFont(new Font("Arial", Font.PLAIN, 14));
+        contentPanel.add(cityList);
+        contentPanel.add(Box.createVerticalStrut(20));
+
+        JLabel temperatureLabel = new JLabel("Temperature: ");
+        temperatureLabel.setForeground(primaryColor);
+        temperatureLabel.setFont(new Font("Arial", Font.BOLD, 25));
+        JLabel pressureLabel = new JLabel("Pressure: ");
+        pressureLabel.setForeground(primaryColor);
+        pressureLabel.setFont(new Font("Arial", Font.BOLD, 25));
+        JLabel humidityLabel = new JLabel("Humidity: ");
+        humidityLabel.setForeground(primaryColor);
+        humidityLabel.setFont(new Font("Arial", Font.BOLD, 25));
+
+
+        contentPanel.add(temperatureLabel);
+        contentPanel.add(pressureLabel);
+        contentPanel.add(humidityLabel);
+        contentPanel.add(Box.createVerticalStrut(20));
+
+        cityList.addActionListener(e -> {
+            String city = (String) cityList.getSelectedItem();
+            double[] result = getWeatherDetails(city);
+            double temperature = result[0];
+            int pressure = (int) result[1];
+            int humidity = (int) result[2];
+
+            temperatureLabel.setText("Temperature: " + temperature + "°C");
+            pressureLabel.setText("Pressure: " + pressure + " hPa");
+            humidityLabel.setText("Humidity: " + humidity + "%");
+        });
+
+        frame.getContentPane().add(contentPanel);
+        frame.setVisible(true);
+    }
+
+    private static double[] getWeatherDetails(String city) {
+        String urlString = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&units=metric&appid=" + API_KEY;
+
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            StringBuilder response = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            JSONObject jsonResponse = new JSONObject(response.toString());
+            double temperature = jsonResponse.getJSONObject("main").getDouble("temp");
+            int pressure = jsonResponse.getJSONObject("main").getInt("pressure");
+            int humidity = jsonResponse.getJSONObject("main").getInt("humidity");
+
+            return new double[]{temperature, pressure, humidity};
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new double[]{};
+        }
+    }
+}
